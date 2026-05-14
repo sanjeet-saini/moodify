@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Mood Music Player</title>
+    <link rel="icon" type="image/png" href="media/moodify-logo.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+</head>
+
+<body data-mood="bhakti">
+    <canvas id="mood-particles" aria-hidden="true"></canvas>
+    <div class="app-bg"></div>
+    <div class="aurora"></div>
+
+    <nav class="topbar">
+        <div class="brand">
+            <div class="brand-logo" aria-hidden="true">
+                <img src="media/moodify-logo.png" alt="">
+            </div>
+            <div>
+                <h1>Moodify</h1>
+                <p>Your mood, your music.</p>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main">
+        <div class="left-stack">
+            <section class="hero-player">
+                <div class="poster-shell">
+                    <div class="poster-ring"></div>
+                    <div id="left">
+                        <img id="disc-art" src="media/bairan.jpeg" alt="">
+                    </div>
+                    <div class="equalizer" aria-hidden="true">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+
+                <div class="now-playing">
+                    <h2 id="current-title">Bairan</h2>
+                    <div class="wave-panel">
+                        <canvas id="visualizer" aria-label="Audio visualizer"></canvas>
+                    </div>
+
+                    <div class="progress-wrap">
+                        <div class="time-row">
+                            <span id="current-time">0:00</span>
+                            <span id="total-time">--:--</span>
+                        </div>
+                        <input id="progress" type="range" min="0" max="100" value="0" aria-label="Song progress">
+                    </div>
+                </div>
+            </section>
+
+            <section class="collections-panel">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">mood collections</p>
+                        <h3>category cards</h3>
+                    </div>
+                </div>
+                <div id="category-cards"></div>
+            </section>
+        </div>
+
+        <aside class="ai-panel">
+            <section class="mood-card">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">ai mood engine</p>
+                        <h3>How do you feel?</h3>
+                    </div>
+                    <button class="voice-btn" id="voice-btn" type="button" aria-label="Voice mood input">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+                </div>
+
+                <form id="mood-form" class="mood-form">
+                    <input id="mood-input" type="text" placeholder="Try: I feel lonely, need gym energy, want focus...">
+                    <button type="submit">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </button>
+                </form>
+
+                <div class="emoji-grid" id="emoji-grid" aria-label="Mood emoji selector">
+                    <button type="button" data-mood="chill">😌</button>
+                    <button type="button" data-mood="sad">💔</button>
+                    <button type="button" data-mood="romantic">❤️</button>
+                    <button type="button" data-mood="gym">🔥</button>
+                    <button type="button" data-mood="happy">🎉</button>
+                    <button type="button" data-mood="focus">📚</button>
+                    <button type="button" data-mood="night">🌙</button>
+                    <button type="button" data-mood="gaming">🎮</button>
+                    <button type="button" data-mood="bhakti">🙏</button>
+                    <button type="button" data-mood="sleep">🛌</button>
+                </div>
+
+                <div class="ai-status">
+                    <span class="pulse-dot"></span>
+                    <p id="ai-insight">AI detected evening spiritual mood from your listening history.</p>
+                </div>
+            </section>
+
+            <section id="right" class="playlist-panel">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">library</p>
+                        <h3>all songs</h3>
+                    </div>
+                </div>
+                <div class="category-tabs" id="category-tabs"></div>
+                <div id="allsong"></div>
+            </section>
+
+            <section class="recommend-card">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">smart playlist</p>
+                        <h3 id="playlist-title">Bhakti / Spiritual</h3>
+                    </div>
+                    <span id="confidence-score">94%</span>
+                </div>
+                <div id="mood-chips"></div>
+                <div id="recommendations"></div>
+            </section>
+        </aside>
+    </main>
+
+    <div class="floating-controls">
+        <div class="mini-player">
+            <img id="mini-art" src="media/bairan.jpeg" alt="">
+            <div>
+                <h4 id="mini-title">Bairan</h4>
+            </div>
+            <div class="mini-bars" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+        <button class="backward control-btn" type="button" aria-label="Previous song">
+            <i class="fa-solid fa-backward"></i>
+        </button>
+        <button class="playbtn control-btn play-control" id="masterplay" type="button" aria-label="Play or pause">
+            <i class="fa-solid fa-circle-play"></i>
+        </button>
+        <button class="forward control-btn" type="button" aria-label="Next song">
+            <i class="fa-solid fa-forward"></i>
+        </button>
+        <label class="volume-control" aria-label="Volume control">
+            <i class="fa-solid fa-volume-high" id="volume-icon"></i>
+            <input id="volume-slider" type="range" min="0" max="100" value="80">
+        </label>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
