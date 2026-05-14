@@ -408,7 +408,8 @@ body.playing .mini-bars span {
     gap: 10px;
 }
 
-.mood-form input {
+.mood-form input,
+.search-field input {
     min-width: 0;
     height: 50px;
     border: 1px solid rgba(255, 255, 255, 0.14);
@@ -417,6 +418,31 @@ body.playing .mini-bars span {
     color: var(--text);
     background: rgba(7, 8, 13, 0.34);
     outline: none;
+}
+
+.search-field {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: -4px 0 14px;
+    padding: 0 14px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+    color: var(--accent);
+    background: rgba(7, 8, 13, 0.34);
+}
+
+.search-field input {
+    width: 100%;
+    height: 46px;
+    border: 0;
+    padding: 0;
+    background: transparent;
+}
+
+.search-field input::-webkit-search-cancel-button {
+    filter: invert(1);
 }
 
 .mood-form button {
@@ -580,6 +606,43 @@ body.playing .mini-bars span {
     font-size: 12px;
 }
 
+.song-actions {
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+}
+
+.favorite-btn,
+.collection-favorite {
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: transform 160ms ease, color 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.favorite-btn {
+    width: 34px;
+    height: 34px;
+}
+
+.favorite-btn:hover,
+.favorite-btn.active,
+.collection-favorite:hover,
+.collection-favorite.active {
+    color: #ff7ab6;
+    border-color: #ff7ab6;
+    background: rgba(255, 122, 182, 0.14);
+}
+
+.favorite-btn:hover,
+.collection-favorite:hover {
+    transform: scale(1.08);
+}
+
 #category-cards {
     display: grid;
     grid-template-columns: 1fr;
@@ -644,7 +707,7 @@ body.playing .mini-bars span {
 .collection-song {
     width: 100%;
     display: grid;
-    grid-template-columns: 38px minmax(0, 1fr) 28px;
+    grid-template-columns: 38px minmax(0, 1fr) 28px 28px;
     align-items: center;
     gap: 10px;
     min-height: 52px;
@@ -671,6 +734,15 @@ body.playing .mini-bars span {
     height: 28px;
     border-radius: 50%;
     background: rgba(0, 0, 0, 0.22);
+}
+
+.collection-favorite {
+    width: 28px;
+    height: 28px;
+}
+
+.collection-favorite i {
+    background: transparent;
 }
 
 #mood-chips {

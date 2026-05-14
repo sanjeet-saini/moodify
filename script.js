@@ -26,6 +26,7 @@ var moodChips = document.querySelector("#mood-chips")
 var recommendations = document.querySelector("#recommendations")
 var categoryTabs = document.querySelector("#category-tabs")
 var categoryCards = document.querySelector("#category-cards")
+var songSearch = document.querySelector("#song-search")
 var voiceBtn = document.querySelector("#voice-btn")
 var volumeSlider = document.querySelector("#volume-slider")
 var volumeIcon = document.querySelector("#volume-icon")
@@ -38,10 +39,12 @@ var miniTitle = document.querySelector("#mini-title")
 var isPlaying = false
 var activeMood = "bhakti"
 var activeCategory = "all"
+var searchQuery = ""
 var particles = []
 var gestureStartX = 0
 var listeningStats = JSON.parse(localStorage.getItem("moodsync-stats") || "{}")
 var savedVolume = Number(localStorage.getItem("moodsync-volume") || 80)
+var favoriteSongs = JSON.parse(localStorage.getItem("moodsync-favorites") || "[]")
 
 // Mood profiles drive AI text detection, UI labels, recommendation chips, and theme text.
 var moodProfiles = {
@@ -141,7 +144,7 @@ let arr = [
 ]
 
 // Categories power the tabs and the mood collection cards.
-var categories = ["all", "Lofi", "Happy", "Sad", "Emotional", "Gym", "Bhakti", "Romantic"]
+var categories = ["all", "Favorites", "Lofi", "Happy", "Sad", "Emotional", "Gym", "Bhakti", "Romantic"]
 var categoryMeta = {
     Lofi: { emoji: "😌", mood: "chill", bg: "linear-gradient(145deg, #2b6cff, #8a5cff)" },
     Happy: { emoji: "🎉", mood: "happy", bg: "linear-gradient(145deg, #ffcf33, #35f5a4)" },
@@ -207,6 +210,41 @@ function recordMoodBehavior(mood) {
     localStorage.setItem("moodsync-stats", JSON.stringify(listeningStats))
 }
 
+function isFavorite(index) {
+    return favoriteSongs.includes(index)
+}
+
+function saveFavorites() {
+    localStorage.setItem("moodsync-favorites", JSON.stringify(favoriteSongs))
+}
+
+function toggleFavorite(index) {
+    if (isFavorite(index)) {
+        favoriteSongs = favoriteSongs.filter(function (songIndex) {
+            return songIndex !== index
+        })
+    } else {
+        favoriteSongs.push(index)
+    }
+
+    saveFavorites()
+    renderSongs()
+    renderCategoryCards()
+    renderMoodPanel()
+}
+
+function matchesSearch(song) {
+    if (!searchQuery) return true
+
+    var query = searchQuery.toLowerCase()
+    return [
+        song.songName,
+        song.vibe,
+        song.category,
+        song.moods.join(" "),
+    ].join(" ").toLowerCase().includes(query)
+}
+
 function detectMoodFromText(text) {
     // Scores typed/voice text with mood keywords, listening history, and time of day.
     var cleanText = text.toLowerCase()
@@ -264,19 +302,21 @@ function updateNowPlaying() {
 function renderSongs() {
     // Builds the all-songs library for the active category tab.
     var clutter = ""
-    var visibleSongs = activeCategory === "all"
-        ? arr.map(function (song, index) {
-            return { song: song, index: index }
-        })
-        : arr.map(function (song, index) {
-            return { song: song, index: index }
-        }).filter(function (item) {
-            return item.song.category === activeCategory
-        })
+    var visibleSongs = arr.map(function (song, index) {
+        return { song: song, index: index }
+    }).filter(function (item) {
+        if (activeCategory === "Favorites") return isFavorite(item.index)
+        if (activeCategory === "all") return true
+        return item.song.category === activeCategory
+    }).filter(function (item) {
+        return matchesSearch(item.song)
+    })
 
     visibleSongs.forEach(function (item) {
         var elem = item.song
         var idx = item.index
+        var favoriteClass = isFavorite(idx) ? "active" : ""
+        var favoriteIcon = isFavorite(idx) ? "fa-solid" : "fa-regular"
 
         clutter += `<div class="songcard ${idx === selectedsong ? "active" : ""}" data-index="${idx}">
     <div class="part1">
@@ -287,11 +327,16 @@ function renderSongs() {
             <span class="category-badge">${elem.category}</span>
         </div>
     </div>
-    <h6 data-duration-index="${idx}">${elem.duration || "--:--"}</h6>
+    <div class="song-actions">
+        <button class="favorite-btn ${favoriteClass}" data-favorite-index="${idx}" type="button" aria-label="Toggle favorite">
+            <i class="${favoriteIcon} fa-heart"></i>
+        </button>
+        <h6 data-duration-index="${idx}">${elem.duration || "--:--"}</h6>
+    </div>
 </div>`
     })
 
-    allsong.innerHTML = clutter || `<div class="empty-state">No songs in this category yet.</div>`
+    allsong.innerHTML = clutter || `<div class="empty-state">${searchQuery ? "No songs match your search." : "No songs in this category yet."}</div>`
 }
 
 function renderCategoryTabs() {
@@ -303,7 +348,7 @@ function renderCategoryTabs() {
 function renderCategoryCards() {
     // Builds one collection card per mood category and lists its songs inside the card.
     categoryCards.innerHTML = categories.filter(function (category) {
-        return category !== "all"
+        return category !== "all" && category !== "Favorites"
     }).map(function (category) {
         var meta = categoryMeta[category]
         var songs = arr.filter(function (song) {
@@ -311,6 +356,8 @@ function renderCategoryCards() {
         })
         var songRows = songs.map(function (song) {
             var songIndex = arr.indexOf(song)
+            var favoriteClass = isFavorite(songIndex) ? "active" : ""
+            var favoriteIcon = isFavorite(songIndex) ? "fa-solid" : "fa-regular"
 
             return `<button class="collection-song ${songIndex === selectedsong ? "active" : ""}" data-index="${songIndex}" type="button">
                 <img src="${song.img}" alt="${song.songName}">
@@ -319,6 +366,9 @@ function renderCategoryCards() {
                     <small>${song.vibe}</small>
                 </span>
                 <i class="fa-solid fa-play"></i>
+                <span class="collection-favorite ${favoriteClass}" data-favorite-index="${songIndex}" role="button" aria-label="Toggle favorite">
+                    <i class="${favoriteIcon} fa-heart"></i>
+                </span>
             </button>`
         }).join("")
 
@@ -349,12 +399,17 @@ function renderMoodPanel() {
         return `<span>${chip}</span>`
     }).join("")
     recommendations.innerHTML = recommended.slice(0, 3).map(function (item) {
+        var favoriteClass = isFavorite(item.index) ? "active" : ""
+        var favoriteIcon = isFavorite(item.index) ? "fa-solid" : "fa-regular"
+
         return `<div class="rec-item" data-index="${item.index}">
             <div>
                 <h4>${item.song.songName}</h4>
                 <p>${profile.emoji} ${item.song.vibe}</p>
             </div>
-            <i class="fa-solid fa-play"></i>
+            <button class="favorite-btn ${favoriteClass}" data-favorite-index="${item.index}" type="button" aria-label="Toggle favorite">
+                <i class="${favoriteIcon} fa-heart"></i>
+            </button>
         </div>`
     }).join("")
 
@@ -558,6 +613,15 @@ categoryTabs.addEventListener("click", function (event) {
 })
 
 categoryCards.addEventListener("click", function (event) {
+    var favoriteButton = event.target.closest("[data-favorite-index]")
+
+    if (favoriteButton) {
+        event.preventDefault()
+        event.stopPropagation()
+        toggleFavorite(Number(favoriteButton.dataset.favoriteIndex))
+        return
+    }
+
     var songButton = event.target.closest(".collection-song")
 
     if (songButton) {
@@ -578,6 +642,14 @@ categoryCards.addEventListener("click", function (event) {
 })
 
 recommendations.addEventListener("click", function (event) {
+    var favoriteButton = event.target.closest("[data-favorite-index]")
+
+    if (favoriteButton) {
+        event.stopPropagation()
+        toggleFavorite(Number(favoriteButton.dataset.favoriteIndex))
+        return
+    }
+
     var item = event.target.closest(".rec-item")
     if (!item) return
     selectedsong = Number(item.dataset.index)
@@ -585,12 +657,25 @@ recommendations.addEventListener("click", function (event) {
 })
 
 allsong.addEventListener("click", function (event) {
+    var favoriteButton = event.target.closest("[data-favorite-index]")
+
+    if (favoriteButton) {
+        event.stopPropagation()
+        toggleFavorite(Number(favoriteButton.dataset.favoriteIndex))
+        return
+    }
+
     var songCard = event.target.closest(".songcard")
     if (!songCard) return
     selectedsong = Number(songCard.dataset.index)
     activeMood = arr[selectedsong].moods[0]
     recordMoodBehavior(activeMood)
     playSelectedSong()
+})
+
+songSearch.addEventListener("input", function () {
+    searchQuery = songSearch.value.trim()
+    renderSongs()
 })
 
 play.addEventListener("click", function () {
