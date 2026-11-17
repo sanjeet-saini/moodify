@@ -460,18 +460,35 @@ function updateDurationText(index) {
     if (index === selectedsong) totalTime.textContent = arr[index].duration
 }
 
-function loadSongDurationForIndex(index) {
-    var durationAudio = new Audio(arr[index].url)
+function loadSongDurationForIndex(index, done) {
+    var durationAudio = new Audio()
+    durationAudio.preload = "metadata"
+
+    function finish() {
+        durationAudio.removeAttribute("src")
+        durationAudio.load()
+        done()
+    }
+
     durationAudio.addEventListener("loadedmetadata", function () {
         arr[index].duration = formatDuration(durationAudio.duration)
         updateDurationText(index)
-    })
+        finish()
+    }, { once: true })
+    durationAudio.addEventListener("error", finish, { once: true })
+    durationAudio.src = arr[index].url
 }
 
 function loadSongDurations() {
-    arr.forEach(function (song, index) {
-        loadSongDurationForIndex(index)
-    })
+    // Reads each song's length one by one (metadata only) so the page stays fast.
+    var index = 0
+
+    function next() {
+        if (index >= arr.length) return
+        loadSongDurationForIndex(index++, next)
+    }
+
+    next()
 }
 
 function setupAudioVisualizer() {
@@ -566,14 +583,7 @@ function drawParticles() {
     particleCtx.globalAlpha = 1
 }
 
-function initByTime() {
-    var hour = new Date().getHours()
-    if (hour >= 5 && hour <= 7) return "bhakti"
-    if (hour >= 22 || hour <= 4) return "chill"
-    return "bhakti"
-}
-
-// Initial app boot: choose a time-based mood, render UI, preload durations, start visuals.
+// Initial app boot: select the first song, render UI, load durations, start visuals.
 resizeCanvases()
 selectedsong = 0
 activeMood = arr[selectedsong].moods[0]
@@ -751,6 +761,10 @@ voiceBtn.addEventListener("click", function () {
         moodInput.value = transcript
         selectMood(detectMoodFromText(transcript), true)
     }
+
+    recognition.onerror = function () {
+        aiInsight.textContent = "Couldn't hear a mood. Please try again or type it instead."
+    }
 })
 
 window.addEventListener("resize", function () {
@@ -771,6 +785,10 @@ document.querySelector(".hero-player").addEventListener("pointerup", function (e
 })
 
 window.addEventListener("keydown", function (event) {
+    // Don't steal Space/Arrow keys while the user is typing in a text box
+    var target = event.target
+    if (target.closest("input, textarea, select, [contenteditable='true']")) return
+
     if (event.code === "Space") {
         event.preventDefault()
         play.click()
