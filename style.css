@@ -720,6 +720,15 @@ body.playing .mini-bars span {
     text-align: left;
 }
 
+/* Long song names end with "..." instead of running under the play button */
+.collection-song > span {
+    min-width: 0;
+}
+
+.collection-song strong {
+    display: block;
+}
+
 .collection-song img {
     width: 38px;
     height: 38px;
